@@ -29,9 +29,83 @@ const Index = () => {
         setBooks(parsedBooks);
       } catch (error) {
         console.error('Error parsing books from localStorage:', error);
+        // If there's an error or no books, set example books
+        setExampleBooks();
       }
+    } else {
+      // If no books in localStorage, set example books
+      setExampleBooks();
     }
   }, []);
+
+  const setExampleBooks = () => {
+    const exampleBooks: Book[] = [
+      {
+        id: "1",
+        title: "Dom Casmurro",
+        author: "Machado de Assis",
+        type: "book",
+        pagesTotal: 256,
+        pagesRead: 256,
+        startDate: new Date("2025-01-15"),
+        finishDate: new Date("2025-02-10"),
+        rating: 5,
+        notes: "Um clássico da literatura brasileira que explora ciúmes e dúvida.",
+        tags: ["clássico", "literatura brasileira"]
+      },
+      {
+        id: "2",
+        title: "Sandman",
+        author: "Neil Gaiman",
+        type: "graphic-novel",
+        coverUrl: "https://m.media-amazon.com/images/I/91-Hc2+iL9L._SY466_.jpg",
+        pagesTotal: 240,
+        pagesRead: 180,
+        startDate: new Date("2025-03-01"),
+        tags: ["fantasia", "quadrinhos"]
+      },
+      {
+        id: "3",
+        title: "A Metamorfose",
+        author: "Franz Kafka",
+        type: "book",
+        pagesTotal: 104,
+        pagesRead: 104,
+        startDate: new Date("2025-02-20"),
+        finishDate: new Date("2025-02-28"),
+        rating: 4,
+        notes: "Uma obra perturbadora sobre alienação e identidade.",
+        tags: ["clássico", "surrealismo"]
+      },
+      {
+        id: "4",
+        title: "One Piece Vol. 1",
+        author: "Eiichiro Oda",
+        type: "manga",
+        coverUrl: "https://m.media-amazon.com/images/I/81D3NlGHJpL._SY466_.jpg",
+        pagesTotal: 216,
+        pagesRead: 216,
+        startDate: new Date("2025-03-10"),
+        finishDate: new Date("2025-03-11"),
+        rating: 5,
+        tags: ["aventura", "manga"]
+      },
+      {
+        id: "5",
+        title: "O Pequeno Príncipe",
+        author: "Antoine de Saint-Exupéry",
+        type: "book",
+        coverUrl: "https://m.media-amazon.com/images/I/81hSz7lyoML._SY466_.jpg",
+        pagesTotal: 96,
+        pagesRead: 32,
+        startDate: new Date("2025-04-01"),
+        tags: ["infantil", "filosofia"]
+      }
+    ];
+
+    setBooks(exampleBooks);
+    localStorage.setItem('books', JSON.stringify(exampleBooks));
+  };
 
   // Calculate stats whenever books change
   useEffect(() => {
@@ -71,6 +145,10 @@ const Index = () => {
   
   const handleDeleteBook = (id: string) => {
     setBooks(prevBooks => prevBooks.filter(book => book.id !== id));
+    toast({
+      title: "Livro removido!",
+      description: "O livro foi removido da sua biblioteca.",
+    });
   };
 
   // Filter books based on the active tab
