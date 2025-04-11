@@ -26,13 +26,14 @@ import { PlusCircle } from 'lucide-react';
 
 interface AddBookFormProps {
   onAddBook: (book: Book) => void;
+  defaultType?: BookType;
 }
 
-const AddBookForm = ({ onAddBook }: AddBookFormProps) => {
+const AddBookForm = ({ onAddBook, defaultType = 'book' }: AddBookFormProps) => {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
-  const [type, setType] = useState<BookType>('book');
+  const [type, setType] = useState<BookType>(defaultType);
   const [pagesTotal, setPagesTotal] = useState<number>(0);
   const [pagesRead, setPagesRead] = useState<number>(0);
   const [notes, setNotes] = useState('');
@@ -63,7 +64,7 @@ const AddBookForm = ({ onAddBook }: AddBookFormProps) => {
     setTitle('');
     setAuthor('');
     setCoverUrl('');
-    setType('book');
+    setType(defaultType);
     setPagesTotal(0);
     setPagesRead(0);
     setNotes('');

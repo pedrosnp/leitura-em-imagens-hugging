@@ -4,9 +4,25 @@ import { Book, BookOpen, Home, BarChart2, Download } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 
-const Navbar = () => {
+interface NavbarProps {
+  activeTab?: string;
+  onChangeTab?: (tab: string) => void;
+}
+
+const Navbar = ({ activeTab, onChangeTab }: NavbarProps = {}) => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Use activeTab from props or derive from location if not provided
+  const currentTab = activeTab || location.pathname.substring(1) || 'books';
+
+  const handleTabChange = (path: string) => {
+    if (onChangeTab) {
+      // Convert path to tab name (remove leading slash)
+      const tabName = path === '/' ? 'books' : path.substring(1);
+      onChangeTab(tabName);
+    }
+  };
 
   const navItems = [
     { name: 'Início', path: '/', icon: <Home className="h-5 w-5" /> },
@@ -22,7 +38,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <Link to="/" className="flex items-center">
+              <Link to="/" className="flex items-center" onClick={() => handleTabChange('/')}>
                 <BookOpen className="h-8 w-8 text-book-primary" />
                 <span className="ml-2 text-xl font-serif font-bold text-book-primary">
                   MeuAcervo
@@ -36,10 +52,12 @@ const Navbar = () => {
                     key={item.name}
                     to={item.path}
                     className={`${
-                      location.pathname === item.path
+                      (activeTab && item.path === '/' ? activeTab === 'books' : item.path.substring(1) === activeTab) ||
+                      (!activeTab && location.pathname === item.path)
                         ? 'bg-book-accent text-book-primary'
                         : 'text-gray-600 hover:bg-book-background hover:text-book-primary'
                     } px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 transition-colors`}
+                    onClick={() => handleTabChange(item.path)}
                   >
                     {item.icon}
                     <span>{item.name}</span>
@@ -91,11 +109,15 @@ const Navbar = () => {
                 key={item.name}
                 to={item.path}
                 className={`${
-                  location.pathname === item.path
+                  (activeTab && item.path === '/' ? activeTab === 'books' : item.path.substring(1) === activeTab) ||
+                  (!activeTab && location.pathname === item.path)
                     ? 'bg-book-accent text-book-primary'
                     : 'text-gray-600 hover:bg-book-background hover:text-book-primary'
                 } block px-3 py-2 rounded-md text-base font-medium flex items-center space-x-2`}
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  handleTabChange(item.path);
+                  setIsOpen(false);
+                }}
               >
                 {item.icon}
                 <span>{item.name}</span>
