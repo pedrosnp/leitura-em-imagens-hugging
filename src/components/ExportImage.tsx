@@ -3,22 +3,47 @@ import { Book, ReadingStats } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, BookOpen, BarChart2, Share2, CreditCard } from 'lucide-react';
-import { exportAsImage, generateBookshelfImageData, generateReadingStatsImageData, generateBookCardImageData } from '@/utils/exportUtils';
+import { Download, BookOpen, BarChart2, Share2, CreditCard, FileText, Trash2 } from 'lucide-react';
+import { 
+  exportAsImage, 
+  generateBookshelfImageData, 
+  generateReadingStatsImageData, 
+  generateBookCardImageData,
+  generateFichaLeituraImageData
+} from '@/utils/exportUtils';
 import { useToast } from '@/hooks/use-toast';
 import BookCard from '@/components/BookCard';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ExportImageProps {
   books: Book[];
   stats: ReadingStats;
+  onDeleteBook?: (id: string) => void;
 }
 
-const ExportImage = ({ books, stats }: ExportImageProps) => {
+const ExportImage = ({ books, stats, onDeleteBook }: ExportImageProps) => {
   const { toast } = useToast();
   const [bookshelfPreview, setBookshelfPreview] = useState<string | null>(null);
   const [statsPreview, setStatsPreview] = useState<string | null>(null);
   const [cardPreview, setCardPreview] = useState<string | null>(null);
+  const [fichaPreview, setFichaPreview] = useState<string | null>(null);
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -89,6 +114,41 @@ const ExportImage = ({ books, stats }: ExportImageProps) => {
     }
   };
 
+  const generateFichaLeituraPreview = () => {
+    try {
+      if (!selectedBookId || books.length === 0) {
+        toast({
+          title: "Selecione um livro",
+          description: "Por favor, selecione um livro ou HQ para gerar a visualização.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const book = books.find(b => b.id === selectedBookId);
+      if (!book) {
+        toast({
+          title: "Livro não encontrado",
+          description: "O livro selecionado não foi encontrado.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setIsGenerating(true);
+      const dataUrl = generateFichaLeituraImageData(book);
+      setFichaPreview(dataUrl);
+      setIsGenerating(false);
+    } catch (error) {
+      toast({
+        title: "Erro ao gerar ficha",
+        description: "Ocorreu um erro ao gerar a ficha de leitura.",
+        variant: "destructive"
+      });
+      setIsGenerating(false);
+    }
+  };
+
   const downloadBookshelf = () => {
     if (!bookshelfPreview) {
       generateBookshelfPreview();
@@ -141,6 +201,26 @@ const ExportImage = ({ books, stats }: ExportImageProps) => {
     });
   };
 
+  const downloadFichaLeitura = () => {
+    if (!fichaPreview || !selectedBookId) {
+      generateFichaLeituraPreview();
+      return;
+    }
+    
+    const book = books.find(b => b.id === selectedBookId);
+    if (!book) return;
+    
+    const link = document.createElement('a');
+    link.download = `ficha-leitura-${book.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`;
+    link.href = fichaPreview;
+    link.click();
+    
+    toast({
+      title: "Ficha baixada!",
+      description: "A ficha de leitura foi salva com sucesso.",
+    });
+  };
+
   const exportCurrentView = async () => {
     try {
       setIsGenerating(true);
@@ -159,6 +239,25 @@ const ExportImage = ({ books, stats }: ExportImageProps) => {
       setIsGenerating(false);
     }
   };
+
+  const handleDeleteBook = (id: string) => {
+    if (onDeleteBook) {
+      onDeleteBook(id);
+      
+      if (id === selectedBookId) {
+        setSelectedBookId(null);
+        setCardPreview(null);
+        setFichaPreview(null);
+      }
+      
+      toast({
+        title: "Livro removido",
+        description: "O livro foi removido com sucesso da sua biblioteca.",
+      });
+    }
+  };
+
+  const selectedBook = selectedBookId ? books.find(b => b.id === selectedBookId) : null;
 
   return (
     <div className="space-y-6">
@@ -190,7 +289,7 @@ const ExportImage = ({ books, stats }: ExportImageProps) => {
 
       <div id="export-container">
         <Tabs defaultValue="bookshelf" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="bookshelf" className="flex gap-2">
               <BookOpen className="h-4 w-4" />
               Estante
@@ -201,7 +300,11 @@ const ExportImage = ({ books, stats }: ExportImageProps) => {
             </TabsTrigger>
             <TabsTrigger value="card" className="flex gap-2">
               <CreditCard className="h-4 w-4" />
-              Card do Livro
+              Card
+            </TabsTrigger>
+            <TabsTrigger value="ficha" className="flex gap-2">
+              <FileText className="h-4 w-4" />
+              Ficha
             </TabsTrigger>
           </TabsList>
           
@@ -289,64 +392,121 @@ const ExportImage = ({ books, stats }: ExportImageProps) => {
                 <div className="flex flex-col items-center">
                   {books.length > 0 ? (
                     <div className="w-full mb-6">
-                      <label htmlFor="book-select" className="block text-sm font-medium text-gray-700 mb-2">
-                        Selecione um livro ou HQ
-                      </label>
-                      <Select 
-                        value={selectedBookId || ""} 
-                        onValueChange={(value) => setSelectedBookId(value)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione um livro ou HQ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {books.map((book) => (
-                            <SelectItem key={book.id} value={book.id}>
-                              {book.title} - {book.author}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex justify-between items-center">
+                        <div className="w-full">
+                          <label htmlFor="book-select" className="block text-sm font-medium text-gray-700 mb-2">
+                            Selecione um livro ou HQ
+                          </label>
+                          <Select 
+                            value={selectedBookId || ""} 
+                            onValueChange={(value) => {
+                              setSelectedBookId(value);
+                              setFichaPreview(null);
+                            }}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione um livro ou HQ" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {books.map((book) => (
+                                <SelectItem key={book.id} value={book.id}>
+                                  {book.title} - {book.author}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {selectedBookId && onDeleteBook && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="destructive" 
+                                size="sm" 
+                                className="mt-6 ml-4"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir leitura</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir esta leitura? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => selectedBookId && handleDeleteBook(selectedBookId)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <p className="text-muted-foreground mb-4">Nenhum livro disponível.</p>
                   )}
                   
-                  {selectedBookId && books.length > 0 && !cardPreview && (
-                    <div className="w-full max-w-md mb-6">
-                      <BookCard book={books.find(b => b.id === selectedBookId)!} />
-                    </div>
-                  )}
-                  
-                  {cardPreview ? (
+                  {fichaPreview ? (
                     <div className="flex flex-col items-center">
                       <img 
-                        src={cardPreview} 
-                        alt="Prévia do card" 
+                        src={fichaPreview} 
+                        alt="Prévia da ficha de leitura" 
                         className="max-w-full h-auto rounded-md shadow-md mb-4"
                       />
                       <Button 
-                        onClick={downloadBookCard}
+                        onClick={downloadFichaLeitura}
                         className="gap-2 bg-book-primary hover:bg-book-secondary"
                       >
                         <Download className="h-4 w-4" />
-                        Baixar Imagem do Card
+                        Baixar Ficha de Leitura
                       </Button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center py-6">
-                      <CreditCard className="h-16 w-16 text-book-primary mb-4" />
-                      <h3 className="text-xl font-serif font-bold mb-2">Card do Livro</h3>
+                      <FileText className="h-16 w-16 text-book-primary mb-4" />
+                      <h3 className="text-xl font-serif font-bold mb-2">Ficha de Leitura</h3>
                       <p className="text-muted-foreground text-center mb-6">
-                        Selecione um livro e gere uma imagem do card para compartilhar com amigos.
+                        Selecione um livro e gere uma ficha de leitura para compartilhar.
                       </p>
+                      
+                      {selectedBook && (
+                        <div className="w-full max-w-md mb-6 border rounded-md p-4">
+                          <h4 className="font-bold text-lg">{selectedBook.title}</h4>
+                          <p className="text-muted-foreground">{selectedBook.author}</p>
+                          <p className="mt-2">Páginas: {selectedBook.pagesRead}/{selectedBook.pagesTotal}</p>
+                          {selectedBook.rating && (
+                            <div className="flex mt-1">
+                              <span className="mr-2">Nota:</span>
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <span key={i} className={i < selectedBook.rating! ? "text-yellow-500" : "text-gray-300"}>
+                                  ★
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {selectedBook.notes && (
+                            <div className="mt-2">
+                              <p className="font-medium">Comentário:</p>
+                              <p className="text-sm">{selectedBook.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       <Button 
-                        onClick={generateBookCardPreview} 
+                        onClick={generateFichaLeituraPreview} 
                         className="gap-2 bg-book-primary hover:bg-book-secondary"
                         disabled={isGenerating || !selectedBookId}
                       >
                         <Download className="h-4 w-4" />
-                        Gerar Visualização do Card
+                        Gerar Ficha de Leitura
                       </Button>
                     </div>
                   )}
