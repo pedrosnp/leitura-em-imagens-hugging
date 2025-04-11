@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Book, ReadingStats, BookType } from "@/types";
 import Navbar from "@/components/Navbar";
@@ -17,12 +16,8 @@ import {
   Download,
   ChevronRight,
 } from "lucide-react";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-
-// Import html2canvas for image export
-import html2canvas from "html2canvas";
-<lov-add-dependency>html2canvas@latest</lov-add-dependency>
 
 const SAMPLE_BOOKS: Book[] = [
   {
@@ -80,7 +75,6 @@ const Index = () => {
     averageRating: 0,
   });
 
-  // Calculate stats when books change
   useEffect(() => {
     if (books.length === 0) {
       setStats({
@@ -122,16 +116,13 @@ const Index = () => {
 
   }, [books]);
 
-  // Filter books when search term or filter changes
   useEffect(() => {
     let filtered = books;
 
-    // Apply type filter
     if (activeFilter !== "all") {
       filtered = filtered.filter(book => book.type === activeFilter);
     }
 
-    // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(book => 
