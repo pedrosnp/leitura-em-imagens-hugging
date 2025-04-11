@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Book, ReadingStats } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import {
   generateReadingStatsImageData, 
   generateBookCardImageData,
   generateFichaLeituraImageData
-} from '@/utils/exportUtils';
+} from '@/utils/exports';
 import { useToast } from '@/hooks/use-toast';
 import BookCard from '@/components/BookCard';
 import { 
